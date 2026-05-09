@@ -1,0 +1,29 @@
+.ace-tool/
+
+# Unity generated folders
+core/TwinSquad/[Ll]ibrary/
+core/TwinSquad/[Tt]emp/
+core/TwinSquad/[Oo]bj/
+core/TwinSquad/[Bb]uild/
+core/TwinSquad/[Bb]uilds/
+core/TwinSquad/[Ll]ogs/
+core/TwinSquad/[Uu]ser[Ss]ettings/
+core/TwinSquad/[Mm]emoryCaptures/
+
+# Unity generated project files
+core/TwinSquad/*.csproj
+core/TwinSquad/*.sln
+core/TwinSquad/*.slnx
+core/TwinSquad/*.user
+core/TwinSquad/*.pidb
+core/TwinSquad/*.booproj
+core/TwinSquad/*.svd
+core/TwinSquad/*.pdb
+core/TwinSquad/*.mdb
+core/TwinSquad/sysinfo.txt
+
+# IDE and OS files
+.idea/
+/.vscode/
+.DS_Store
+Thumbs.db
