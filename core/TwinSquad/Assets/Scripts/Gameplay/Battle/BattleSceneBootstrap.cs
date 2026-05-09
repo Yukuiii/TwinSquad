@@ -41,6 +41,9 @@ namespace TwinSquad.Gameplay.Battle
         private Sprite _bulletSprite;
         private Sprite _shadowSprite;
 
+        // 真图渲染颜色：真图用 white 不 tint，占位用对应 color tint 上色
+        private Color _bulletRenderColor = Color.white;
+
         // 真图动画帧（找不到时回退到占位）
         private Sprite[] _playerIdleFrames;
 
@@ -71,8 +74,19 @@ namespace TwinSquad.Gameplay.Battle
 
             // 敌人占位：底部对齐（spawn 在 y=0 时脚底贴地）
             _enemySprite  = CreateRectSprite(enemyColor,  45, 90, pivot: new Vector2(0.5f, 0f));
-            // 子弹占位：中心对齐（飞行物用中心更自然）
-            _bulletSprite = CreateRectSprite(bulletColor, 20, 20);
+
+            // 子弹：优先真图（自带颜色，不 tint），缺失则用软边圆光点 + bulletColor tint
+            var realBullet = Resources.Load<Sprite>("Sprites/Effects/bullet");
+            if (realBullet != null)
+            {
+                _bulletSprite = realBullet;
+                _bulletRenderColor = Color.white;
+            }
+            else
+            {
+                _bulletSprite = CreateCircleSprite(32, ppu: 64f);
+                _bulletRenderColor = bulletColor;
+            }
 
             // 阴影：白色基底 + 软边圆，运行时通过 SpriteRenderer.color tint
             _shadowSprite = CreateCircleSprite(64);
@@ -205,6 +219,7 @@ namespace TwinSquad.Gameplay.Battle
 
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = _bulletSprite;
+            sr.color = _bulletRenderColor;
             sr.sortingOrder = 15;
             go.AddComponent<Billboard>();
 
