@@ -15,6 +15,15 @@ namespace TwinSquad.Gameplay.Battle
     {
         [SerializeField] private bool freezeTilt = true;
 
+        /// <summary>
+        /// 运行时切换模式。true=仅绕 Y（站立），false=完全朝相机（强制正脸）。
+        /// </summary>
+        public bool FreezeTilt
+        {
+            get => freezeTilt;
+            set => freezeTilt = value;
+        }
+
         private Transform _cam;
 
         private void OnEnable()
@@ -40,8 +49,9 @@ namespace TwinSquad.Gameplay.Battle
             }
             else
             {
-                // 完全朝相机
-                transform.rotation = Quaternion.LookRotation(transform.position - _cam.position);
+                // 完全朝相机：直接复制相机 rotation，sprite 的 right/up 与相机完全同步
+                // → cam 视角中 sprite 永远稳定居正，避免 LookRotation 默认 up 在 SmoothFollow 下抖动导致的翻转
+                transform.rotation = _cam.rotation;
             }
         }
     }

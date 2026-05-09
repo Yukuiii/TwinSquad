@@ -16,7 +16,7 @@ namespace TwinSquad.EditorTools
     ///
     /// 默认参数：
     /// - PPU = 256（与 256×512 像素人物 = 1×2 世界单位匹配）
-    /// - Pivot = Center (0.5, 0.5)（配合 transform.y = 1 让脚底贴地）
+    /// - Pivot = BottomCenter (0.5, 0)（让 transform.position 直接对应脚底，配合 freezeTilt=false 强制正脸时脚底永远贴地）
     /// - Filter = Bilinear（手绘/二次元，像素风请改 Point）
     /// - 透明通道 = 启用
     /// - Mipmap = 关闭（2D 不需要，省内存）
@@ -43,7 +43,7 @@ namespace TwinSquad.EditorTools
             // pivot 必须通过 TextureImporterSettings 路径
             var settings = new TextureImporterSettings();
             importer.ReadTextureSettings(settings);
-            settings.spriteAlignment = (int)SpriteAlignment.Center;
+            settings.spriteAlignment = (int)SpriteAlignment.BottomCenter;
             importer.SetTextureSettings(settings);
         }
     }

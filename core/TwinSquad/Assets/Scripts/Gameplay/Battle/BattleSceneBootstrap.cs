@@ -26,18 +26,20 @@ namespace TwinSquad.Gameplay.Battle
         [SerializeField] private int enemyCount = 10;
 
         [Header("相机")]
-        [SerializeField] private Vector3 cameraOffset = new(0f, 11f, -9f);
+        [SerializeField] private Vector3 cameraOffset = new(0f, 7f, -10f);  // ~35° 俯视，缓解 Billboard 纸片感
 
         [Header("配色")]
         [SerializeField] private Color playerColor = new(0.25f, 0.65f, 1f);
         [SerializeField] private Color enemyColor  = new(1f, 0.3f, 0.3f);
         [SerializeField] private Color bulletColor = new(1f, 0.95f, 0.25f);
         [SerializeField] private Color groundColor = new(0.22f, 0.24f, 0.28f);
+        [SerializeField] private Color shadowColor = new(0f, 0f, 0f, 0.45f);
 
         // 占位 sprite（生成一次复用）
         private Sprite _playerSprite;
         private Sprite _enemySprite;
         private Sprite _bulletSprite;
+        private Sprite _shadowSprite;
 
         // 真图动画帧（找不到时回退到占位）
         private Sprite[] _playerIdleFrames;
@@ -61,15 +63,19 @@ namespace TwinSquad.Gameplay.Battle
         // ===== 占位 sprite =====
         private void BuildPlaceholderSprites()
         {
-            // 玩家：优先加载 Resources 真图（256×512），缺失时回退占位
+            // 玩家：优先加载 Resources 真图（256×512），缺失时回退占位（pivot 底部对齐）
             _playerIdleFrames = Resources.LoadAll<Sprite>("Sprites/Characters/Player/Idle");
             _playerSprite = (_playerIdleFrames != null && _playerIdleFrames.Length > 0)
                 ? _playerIdleFrames[0]
-                : CreateRectSprite(playerColor, 50, 100);
+                : CreateRectSprite(playerColor, 50, 100, pivot: new Vector2(0.5f, 0f));
 
-            // 敌人/子弹暂未接入真图
-            _enemySprite  = CreateRectSprite(enemyColor,  45, 90);
+            // 敌人占位：底部对齐（spawn 在 y=0 时脚底贴地）
+            _enemySprite  = CreateRectSprite(enemyColor,  45, 90, pivot: new Vector2(0.5f, 0f));
+            // 子弹占位：中心对齐（飞行物用中心更自然）
             _bulletSprite = CreateRectSprite(bulletColor, 20, 20);
+
+            // 阴影：白色基底 + 软边圆，运行时通过 SpriteRenderer.color tint
+            _shadowSprite = CreateCircleSprite(64);
         }
 
         // ===== 场景元素 =====
@@ -131,13 +137,14 @@ namespace TwinSquad.Gameplay.Battle
         private PlayerController CreatePlayer(GameObject bulletPrefab)
         {
             var go = new GameObject("Player");
-            go.transform.position = new Vector3(0f, 1f, 0f);   // sprite 中心高 1m，底部贴地
+            go.transform.position = Vector3.zero;   // pivot 在脚底，position 直接是脚底位置
 
-            // 视觉：SpriteRenderer + Billboard
+            // 视觉：SpriteRenderer + Billboard（强制正脸）
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = _playerSprite;
             sr.sortingOrder = 10;
-            go.AddComponent<Billboard>();
+            var billboard = go.AddComponent<Billboard>();
+            billboard.FreezeTilt = false;  // 完全朝相机，避免 35° 俯视下的纸片压缩
 
             // 动画：有真图帧时挂播放器（>=2 帧才循环，1 帧没必要）
             if (_playerIdleFrames != null && _playerIdleFrames.Length > 1)
@@ -146,11 +153,11 @@ namespace TwinSquad.Gameplay.Battle
                 anim.Play(_playerIdleFrames, newFps: 8f, newLoop: true);
             }
 
-            // 物理：3D Capsule
+            // 物理：3D Capsule，center 抬到身体中心（pivot 在脚底 → 碰撞盒中心要 +1）
             var col = go.AddComponent<CapsuleCollider>();
             col.radius = 0.5f;
             col.height = 2f;
-            col.center = Vector3.zero;
+            col.center = new Vector3(0f, 1f, 0f);
             col.direction = 1; // Y 轴
 
             var rb = go.AddComponent<Rigidbody>();
@@ -160,6 +167,10 @@ namespace TwinSquad.Gameplay.Battle
 
             var ctrl = go.AddComponent<PlayerController>();
             ctrl.Configure(bulletPrefab);
+
+            // 脚底阴影（独立 GameObject，每帧贴地追随）
+            CreateShadow(go.transform, worldRadius: 0.45f);
+
             return ctrl;
         }
 
@@ -174,10 +185,11 @@ namespace TwinSquad.Gameplay.Battle
             sr.sortingOrder = 5;
             go.AddComponent<Billboard>();
 
+            // pivot 底部 → collider center 抬到身体中心（height 1.8 → +0.9）
             var col = go.AddComponent<CapsuleCollider>();
             col.radius = 0.45f;
             col.height = 1.8f;
-            col.center = Vector3.zero;
+            col.center = new Vector3(0f, 0.9f, 0f);
             col.direction = 1;
 
             go.AddComponent<EnemyController>();
@@ -219,11 +231,35 @@ namespace TwinSquad.Gameplay.Battle
         }
 
         /// <summary>
-        /// 生成纯色矩形 Sprite（占位用）。
-        /// pivot 设在 (0.5, 0.5) 中心，配合 transform.y = height/2 让 sprite 底部贴地。
-        /// PPU = 50：50 像素 = 1 世界单位。
+        /// 创建脚底阴影：独立 GameObject + GroundShadow 跟随脚本。
+        /// worldRadius 是阴影世界半径（米），shadow sprite PPU=64 → 1m × 1m，scale=直径。
         /// </summary>
-        private static Sprite CreateRectSprite(Color color, int width, int height, float ppu = 50f)
+        private void CreateShadow(Transform follow, float worldRadius)
+        {
+            var go = new GameObject($"Shadow_{follow.name}");
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = _shadowSprite;
+            sr.color = shadowColor;
+            sr.sortingOrder = 0;  // 角色之下、地面之上
+
+            var diameter = worldRadius * 2f;
+            go.transform.localScale = new Vector3(diameter, diameter, 1f);
+
+            var shadow = go.AddComponent<GroundShadow>();
+            shadow.Bind(follow);
+        }
+
+        /// <summary>
+        /// 生成纯色矩形 Sprite（占位用）。
+        /// PPU = 50：50 像素 = 1 世界单位。
+        /// pivot 默认 (0.5, 0.5) 中心；传 (0.5, 0) 则底部对齐（脚底贴 transform.position）。
+        /// </summary>
+        private static Sprite CreateRectSprite(
+            Color color,
+            int width,
+            int height,
+            float ppu = 50f,
+            Vector2? pivot = null)
         {
             var tex = new Texture2D(width, height, TextureFormat.RGBA32, false)
             {
@@ -238,6 +274,53 @@ namespace TwinSquad.Gameplay.Battle
             return Sprite.Create(
                 tex,
                 new Rect(0, 0, width, height),
+                pivot ?? new Vector2(0.5f, 0.5f),
+                ppu);
+        }
+
+        /// <summary>
+        /// 生成软边圆形 Sprite（白色基底，运行时通过 color tint）。
+        /// 中心实心，边缘 SmoothStep 过渡到透明，有真实阴影质感。
+        /// PPU=64：64×64 像素 → 1×1 世界单位，方便用 transform.localScale 控制直径。
+        /// </summary>
+        private static Sprite CreateCircleSprite(int size = 64, float ppu = 64f)
+        {
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp,
+            };
+            var pixels = new Color[size * size];
+            var center = (size - 1) * 0.5f;
+            var radius = center;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    var dx = x - center;
+                    var dy = y - center;
+                    var dist = Mathf.Sqrt(dx * dx + dy * dy);
+                    var t = dist / radius;
+
+                    if (t > 1f)
+                    {
+                        pixels[y * size + x] = new Color(1f, 1f, 1f, 0f);
+                    }
+                    else
+                    {
+                        // 中心 alpha=1，边缘 alpha=0，SmoothStep 让过渡自然
+                        var alpha = Mathf.SmoothStep(1f, 0f, t);
+                        pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                    }
+                }
+            }
+            tex.SetPixels(pixels);
+            tex.Apply();
+
+            return Sprite.Create(
+                tex,
+                new Rect(0, 0, size, size),
                 new Vector2(0.5f, 0.5f),
                 ppu);
         }
@@ -249,7 +332,7 @@ namespace TwinSquad.Gameplay.Battle
     public class SimpleFollowCamera : MonoBehaviour
     {
         public Transform Target;
-        public Vector3 Offset = new(0f, 11f, -9f);
+        public Vector3 Offset = new(0f, 7f, -10f);
         public float SmoothTime = 0.15f;
 
         private Vector3 _velocity;

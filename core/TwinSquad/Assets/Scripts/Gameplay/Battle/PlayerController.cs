@@ -67,7 +67,8 @@ namespace TwinSquad.Gameplay.Battle
             {
                 dir.Normalize();
                 transform.position += dir * moveSpeed * Time.deltaTime;
-                transform.rotation = Quaternion.LookRotation(dir);
+                // 不设置 transform.rotation：Sprite 朝向完全交给 Billboard 处理
+                // 想要"面向运动方向"的视觉效果应通过 SpriteRenderer.flipX 或多向贴图实现
             }
         }
 
