@@ -16,8 +16,9 @@ namespace TwinSquad.Managers
 
         // ===== 子系统引用 =====
         public SaveManager Save { get; private set; }
+        public ConfigManager Config { get; private set; }
         public UIManager UI { get; private set; }
-        // 后续按需添加：ConfigManager、InventoryManager、CharacterManager...
+        // 后续按需添加：InventoryManager、CharacterManager...
 
         public bool IsInitialized { get; private set; }
 
@@ -44,9 +45,12 @@ namespace TwinSquad.Managers
 
         private void Init()
         {
-            // 初始化顺序：Save 最先（业务模块会读取存档数据），UI 其后
+            // 初始化顺序：Save / Config 在前（业务模块依赖），UI 在后
             Save = gameObject.AddComponent<SaveManager>();
             Save.Init();
+
+            Config = gameObject.AddComponent<ConfigManager>();
+            Config.Init();
 
             UI = gameObject.AddComponent<UIManager>();
 
