@@ -1,24 +1,31 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement;
-public class HomeSceneController : MonoBehaviour
+using TwinSquad.Managers;
+
+namespace TwinSquad.UI
 {
-
-    [SerializeField] private Button startButton;
-    [SerializeField] private string gameSceneName;
-
-    private void Awake()
+    /// <summary>
+    /// 主页场景控制器。仅处理"开始按钮 → 进入游戏场景"。
+    /// 场景加载走 GameManager 统一入口（后续可叠加 loading UI、资源预热等）。
+    /// </summary>
+    public class HomeSceneController : MonoBehaviour
     {
-        startButton.onClick.AddListener(LoadGameScene);
-    }
+        [SerializeField] private Button startButton;
+        [SerializeField] private string gameSceneName;
 
-    private void OnDestroy()
-      {
-        startButton.onClick.RemoveListener(LoadGameScene);
-      }
+        private void Awake()
+        {
+            startButton.onClick.AddListener(LoadGameScene);
+        }
 
-    private void LoadGameScene()
-    {
-        SceneManager.LoadScene(gameSceneName);
+        private void OnDestroy()
+        {
+            startButton.onClick.RemoveListener(LoadGameScene);
+        }
+
+        private void LoadGameScene()
+        {
+            GameManager.Instance.LoadScene(gameSceneName);
+        }
     }
 }
