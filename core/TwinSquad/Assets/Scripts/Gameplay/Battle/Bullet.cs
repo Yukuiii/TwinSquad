@@ -21,6 +21,7 @@ namespace TwinSquad.Gameplay.Battle
 
         public void Launch(Vector3 direction, BattleEntity source, int damage)
         {
+            direction.z = 0f;  // 锁定 XY 平面飞行
             _direction = direction.normalized;
             _source = source;
             _damage = damage;

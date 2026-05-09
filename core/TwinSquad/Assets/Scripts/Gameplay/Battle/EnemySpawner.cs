@@ -67,7 +67,8 @@ namespace TwinSquad.Gameplay.Battle
             var player = BattleManager.Instance?.Player;
             var center = player != null ? player.transform.position : Vector3.zero;
             var angle = Random.Range(0f, Mathf.PI * 2f);
-            return center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * spawnRadius;
+            // 2D 顶视：圆周在 XY 平面（cos→x, sin→y, z=0）
+            return center + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * spawnRadius;
         }
     }
 }

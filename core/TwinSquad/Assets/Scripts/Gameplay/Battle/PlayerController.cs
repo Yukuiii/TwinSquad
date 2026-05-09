@@ -58,8 +58,8 @@ namespace TwinSquad.Gameplay.Battle
             if (kb == null) return;
 
             var dir = Vector3.zero;
-            if (kb.wKey.isPressed || kb.upArrowKey.isPressed)    dir.z += 1f;
-            if (kb.sKey.isPressed || kb.downArrowKey.isPressed)  dir.z -= 1f;
+            if (kb.wKey.isPressed || kb.upArrowKey.isPressed)    dir.y += 1f;
+            if (kb.sKey.isPressed || kb.downArrowKey.isPressed)  dir.y -= 1f;
             if (kb.aKey.isPressed || kb.leftArrowKey.isPressed)  dir.x -= 1f;
             if (kb.dKey.isPressed || kb.rightArrowKey.isPressed) dir.x += 1f;
 
@@ -67,8 +67,7 @@ namespace TwinSquad.Gameplay.Battle
             {
                 dir.Normalize();
                 transform.position += dir * moveSpeed * Time.deltaTime;
-                // 不设置 transform.rotation：Sprite 朝向完全交给 Billboard 处理
-                // 想要"面向运动方向"的视觉效果应通过 SpriteRenderer.flipX 或多向贴图实现
+                // 2D 顶视：sprite 不旋转，永远直立朝屏幕
             }
         }
 
@@ -101,13 +100,13 @@ namespace TwinSquad.Gameplay.Battle
         private void ShootAt(BattleEntity target)
         {
             if (bulletPrefab == null) return;
-            var origin = muzzle != null ? muzzle.position : transform.position + Vector3.up * 0.8f;
+            var origin = muzzle != null ? muzzle.position : transform.position;
             var dir = target.transform.position - origin;
-            dir.y = 0f;
+            dir.z = 0f;  // 限制在 XY 平面飞行
             if (dir.sqrMagnitude < 0.001f) return;
             dir.Normalize();
 
-            var bullet = PoolManager.Spawn<Bullet>(bulletPrefab, origin, Quaternion.LookRotation(dir));
+            var bullet = PoolManager.Spawn<Bullet>(bulletPrefab, origin, Quaternion.identity);
             bullet?.Launch(dir, this, attackDamage);
         }
 

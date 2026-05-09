@@ -47,12 +47,12 @@ namespace TwinSquad.Gameplay.Battle
             if (BattleManager.Instance == null || BattleManager.Instance.State != BattleState.Fighting) return;
 
             var toTarget = _target.transform.position - transform.position;
-            toTarget.y = 0f;
+            toTarget.z = 0f;  // 限制在 XY 平面
             var dist = toTarget.magnitude;
             if (dist < 0.001f) return;
 
             var dir = toTarget / dist;
-            transform.rotation = Quaternion.LookRotation(dir);
+            // 2D 顶视：sprite 永远直立朝屏幕，不旋转
 
             if (dist > damageRange)
             {
