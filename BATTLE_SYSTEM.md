@@ -9,6 +9,8 @@
 
 ## 一、模块概述
 
+> **实现状态：核心战斗循环已完成，可运行 Demo。部分子系统（Skill / Drop / Buff / AI 策略）待实现。**
+
 ### 1.1 系统定位
 
 战斗系统是游戏的**核心玩法循环**，承载所有关卡、活动、Boss 战。
@@ -71,41 +73,69 @@
 
 ```csharp
 public enum BattleState {
-    Loading,      // 加载关卡资源
-    Ready,        // 准备阶段（倒计时）
-    Fighting,     // 战斗中
-    Paused,       // 暂停
-    Settling,     // 结算中
-    Finished,     // 已结束
+    Idle,         // 等待开始 ✅
+    Fighting,     // 战斗中 ✅
+    Victory,      // 胜利 ✅
+    Defeat,       // 失败 ✅
+    // Loading,   // 加载关卡资源 ⏳
+    // Ready,     // 准备阶段（倒计时）⏳
+    // Paused,    // 暂停 ⏳
+    // Settling,  // 结算中 ⏳
 }
 ```
 
-### 3.2 EntityManager（实体集合）
+### 3.2 EntityManager（实体集合）✅ 基础版已实现
 
 统一管理战斗中所有实体：玩家、敌人、子弹、可拾取物。
 
 ```csharp
+// 当前实际实现
 public abstract class BattleEntity : MonoBehaviour {
-    public long EntityId;            // 唯一 ID
-    public EntityType Type;          // Player / Enemy / Bullet / Pickup
-    public EntityStats Stats;        // 战斗属性
-    public BuffContainer Buffs;      // buff 容器
+    [SerializeField] protected int maxHP = 100;
+    [SerializeField] protected EntityCamp camp = EntityCamp.Neutral;
 
-    public virtual void OnSpawn();
-    public virtual void OnDespawn();
-    public virtual void TakeDamage(DamageInfo info);
+    public int MaxHP { get; }
+    public int CurrentHP { get; }
+    public EntityCamp Camp { get; }
+    public bool IsDead { get; }
+
+    public void TakeDamage(DamageInfo info);    // 内联伤害计算 + 事件发布
+    protected virtual void OnDamaged();
+    protected virtual void OnDeath();
+
+    // EntityCamp 枚举：Player / Enemy / Neutral
+    // DamageInfo 结构体：Source(BattleEntity), Damage(int), IsCritical(bool)
 }
 ```
+
+**当前限制**（待后续迭代）：
+- 无独立 EntityType 枚举（通过类继承区分 PlayerController / EnemyController / Bullet）
+- 无 BuffContainer（BuffSystem 待实现）
+- 无 EntityId（当前通过引用标识）
+- 敌人查找使用 `FindObjectsByType`，未做空间分区优化
 
 注意：
 - 所有 Entity 通过 `EntityManager.Spawn/Despawn` 进出战场，不直接 Instantiate
 - 内部用 ObjectPool 复用
 
-### 3.3 EnemySpawner（刷怪系统）
+### 3.3 EnemySpawner（刷怪系统）✅ 基础版已实现
 
-按**波次配置**生成敌人。
+按**固定数量**在玩家周围圆形位置随机生成敌人。
 
 ```csharp
+// 当前实际实现
+public class EnemySpawner : MonoBehaviour {
+    public IEnumerator RunBattle();                // 协程间隔生成
+    private Vector3 GetRandomPositionAroundPlayer(); // 圆周随机位置（XY 平面）
+}
+// 配置：totalCount / spawnRadius / spawnInterval / autoStart
+// 自动预热对象池：PoolManager.Prewarm(enemyPrefab, count)
+```
+
+**当前限制**：仅支持固定总数 + 随机圆形生成。多波次、曲线模式、触发模式待实现。
+
+```csharp
+// 规划中的完整配置（待实现）
 public class WaveConfig {
     public int WaveId;
     public float StartTime;          // 波次开始时间
@@ -355,14 +385,29 @@ public class DropEntry {
 ### 事件定义
 
 ```csharp
-public static class BattleEvents {
-    public const string OnBattleStart      = "Battle.OnStart";
-    public const string OnBattleEnd        = "Battle.OnEnd";
-    public const string OnEntityDamaged    = "Battle.OnEntityDamaged";
-    public const string OnEntityDied       = "Battle.OnEntityDied";
-    public const string OnSkillCast        = "Battle.OnSkillCast";
-    public const string OnWaveComplete     = "Battle.OnWaveComplete";
+// 当前实际实现（类型安全泛型 EventBus）
+public struct EntityDamagedEvent {
+    public BattleEntity Entity;
+    public BattleEntity Source;
+    public int Damage;
+    public bool IsCritical;
 }
+
+public struct EntityDiedEvent {
+    public BattleEntity Entity;
+    public BattleEntity Killer;
+}
+
+public struct BattleStartedEvent { }
+
+public struct BattleEndedEvent {
+    public BattleState Result;      // Victory / Defeat
+    public float Duration;
+    public int EnemyKilled;
+}
+
+// 规划中（待实现）
+// OnSkillCast, OnWaveComplete, OnDropGenerated
 ```
 
 ---
@@ -383,19 +428,25 @@ Scripts/UI/Battle/
 
 ## 九、实现路线图
 
-### 阶段 1：最小可玩 Demo
-- [ ] BattleManager 基础状态机
-- [ ] 玩家移动 + 单一技能
-- [ ] 一种敌人 + 简单追击 AI
-- [ ] DamageSystem 基础伤害计算
-- [ ] 单波次刷怪
+### 阶段 1：最小可玩 Demo ✅ 已完成
+- [x] BattleManager 基础状态机（Idle / Fighting / Victory / Defeat）
+- [x] 玩家移动（WASD）+ 自动索敌射击
+- [x] 一种敌人（Slime）+ 追击 AI + 接触伤害
+- [x] 伤害系统（BattleEntity.TakeDamage，内联实现）
+- [x] 单波次刷怪（EnemySpawner，圆周随机生成）
+- [x] 子弹系统（Bullet，池化、阵营友伤判断）
+- [x] 对象池（PoolManager，Spawn / Despawn / Prewarm）
+- [x] 帧动画（SimpleSpriteAnimator）
+- [x] 一键启动器（BattleSceneBootstrap，自动构建场景）
 
-### 阶段 2：核心战斗循环
-- [ ] EntityManager + 对象池
+### 阶段 2：核心战斗循环 ⏳ 部分完成
+- [x] EntityManager 基础版（BattleEntity 抽象基类）
+- [x] 对象池完整实现
 - [ ] EnemySpawner 多波次配置
 - [ ] BuffSystem 基础 buff
 - [ ] DropSystem 掉落
 - [ ] BattleHUD + 飘字
+- [ ] SkillSystem 技能释放
 
 ### 阶段 3：内容扩展
 - [ ] 多种敌人 AI
@@ -442,6 +493,6 @@ Scripts/UI/Battle/
 
 ---
 
-> 文档版本：v0.1
-> 最后更新：2026-05-09
+> 文档版本：v0.2
+> 最后更新：2026-05-10
 > 维护原则：随战斗系统迭代持续更新，新增子系统 / 优化方案同步至本文档
