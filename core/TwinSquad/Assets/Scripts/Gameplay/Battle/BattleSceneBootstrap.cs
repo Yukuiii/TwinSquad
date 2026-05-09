@@ -46,6 +46,7 @@ namespace TwinSquad.Gameplay.Battle
 
         // 真图动画帧（找不到时回退到占位）
         private Sprite[] _playerIdleFrames;
+        private Sprite[] _enemyRunFrames;
 
         private void Awake()
         {
@@ -72,8 +73,11 @@ namespace TwinSquad.Gameplay.Battle
                 ? _playerIdleFrames[0]
                 : CreateRectSprite(playerColor, 50, 100, pivot: new Vector2(0.5f, 0f));
 
-            // 敌人占位：底部对齐（spawn 在 y=0 时脚底贴地）
-            _enemySprite  = CreateRectSprite(enemyColor,  45, 90, pivot: new Vector2(0.5f, 0f));
+            // 敌人：优先加载 Slime Run 真图，缺失时回退占位（pivot 底部对齐）
+            _enemyRunFrames = Resources.LoadAll<Sprite>("Sprites/Characters/Enemies/Slime/Run");
+            _enemySprite = (_enemyRunFrames != null && _enemyRunFrames.Length > 0)
+                ? _enemyRunFrames[0]
+                : CreateRectSprite(enemyColor, 45, 90, pivot: new Vector2(0.5f, 0f));
 
             // 子弹：优先真图（自带颜色，不 tint），缺失则用软边圆光点 + bulletColor tint
             var realBullet = Resources.Load<Sprite>("Sprites/Effects/bullet");
@@ -197,7 +201,16 @@ namespace TwinSquad.Gameplay.Battle
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = _enemySprite;
             sr.sortingOrder = 5;
-            go.AddComponent<Billboard>();
+            var billboard = go.AddComponent<Billboard>();
+            billboard.FreezeTilt = false;  // 和玩家一致：完全朝相机，避免追玩家时绕 Y 旋转引发的视觉翻转
+
+            // 动画：有真图帧时挂播放器（≥2 帧才循环）
+            // 注意：模板 SetActive(false)，从池 Spawn 出来时 OnEnable 自动重置到第 0 帧
+            if (_enemyRunFrames != null && _enemyRunFrames.Length > 1)
+            {
+                var anim = go.AddComponent<SimpleSpriteAnimator>();
+                anim.Play(_enemyRunFrames, newFps: 8f, newLoop: true);
+            }
 
             // pivot 底部 → collider center 抬到身体中心（height 1.8 → +0.9）
             var col = go.AddComponent<CapsuleCollider>();
