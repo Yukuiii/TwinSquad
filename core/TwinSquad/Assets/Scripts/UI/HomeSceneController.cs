@@ -14,7 +14,7 @@ public class HomeSceneController : MonoBehaviour
 
     private void OnDestroy()
       {
-          startButton.onClick.RemoveListener(LoadGameScene);
+        startButton.onClick.RemoveListener(LoadGameScene);
       }
 
     private void LoadGameScene()
