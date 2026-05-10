@@ -15,6 +15,12 @@ namespace TwinSquad.Gameplay.Battle
         public BattleEntity Source;
     }
 
+    // ===== 掉落事件 =====
+    public struct DropItemPickedUpEvent
+    {
+        public DropItem Drop;
+    }
+
     // ===== 战斗级事件 =====
     public struct BattleStartedEvent
     {

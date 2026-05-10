@@ -20,8 +20,12 @@ namespace TwinSquad.Gameplay.Battle
         [SerializeField] private float damageCooldown = 1f;
         [SerializeField] private float damageRange = 1.4f;
 
+        [Header("掉落")]
+        [SerializeField] private float dropChance = 0.5f;
+
         private BattleEntity _target;
         private float _damageTimer;
+        [SerializeField] private GameObject _dropPrefab;
 
         protected override void Awake()
         {
@@ -40,6 +44,8 @@ namespace TwinSquad.Gameplay.Battle
         {
             _target = null;
         }
+
+        public void SetDropPrefab(GameObject prefab) => _dropPrefab = prefab;
 
         private void Update()
         {
@@ -69,6 +75,10 @@ namespace TwinSquad.Gameplay.Battle
 
         protected override void OnDeath()
         {
+            if (_dropPrefab != null && Random.value <= dropChance)
+            {
+                PoolManager.Spawn(_dropPrefab, transform.position, Quaternion.identity);
+            }
             PoolManager.Despawn(gameObject);
         }
     }

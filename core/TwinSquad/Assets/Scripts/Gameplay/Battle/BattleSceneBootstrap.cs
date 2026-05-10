@@ -33,6 +33,7 @@ namespace TwinSquad.Gameplay.Battle
         [SerializeField] private Color playerColor = new(0.25f, 0.65f, 1f);
         [SerializeField] private Color enemyColor  = new(1f, 0.3f, 0.3f);
         [SerializeField] private Color bulletColor = new(1f, 0.95f, 0.25f);
+        [SerializeField] private Color dropColor   = new(0.3f, 0.6f, 1f);
         [SerializeField] private Color groundColor = new(0.22f, 0.24f, 0.28f);
 
         // 占位 sprite（生成一次复用）
@@ -55,7 +56,8 @@ namespace TwinSquad.Gameplay.Battle
 
             var battleMgrGo = CreateBattleManager();
             var bulletPrefab = CreateBulletTemplate();
-            var enemyPrefab = CreateEnemyTemplate();
+            var dropPrefab = CreateDropTemplate();
+            var enemyPrefab = CreateEnemyTemplate(dropPrefab);
             var player = CreatePlayer(bulletPrefab);
 
             ground.Bind(player.transform);   // 玩家创建后才能绑定跟随
@@ -197,7 +199,30 @@ namespace TwinSquad.Gameplay.Battle
 
         // ===== 敌人模板 =====
 
-        private GameObject CreateEnemyTemplate()
+        // ===== 掉落物模板 =====
+
+        private GameObject CreateDropTemplate()
+        {
+            var go = new GameObject("DropTemplate");
+
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = CreateCircleSprite(32, ppu: 64f);
+            sr.color = dropColor;
+            sr.sortingOrder = 8;
+
+            var col = go.AddComponent<SphereCollider>();
+            col.radius = 0.25f;
+            col.isTrigger = true;
+            col.center = Vector3.zero;
+
+            go.AddComponent<DropItem>();
+            go.SetActive(false);
+            return go;
+        }
+
+        // ===== 敌人模板 =====
+
+        private GameObject CreateEnemyTemplate(GameObject dropPrefab)
         {
             var go = new GameObject("EnemyTemplate");
 
@@ -216,6 +241,7 @@ namespace TwinSquad.Gameplay.Battle
             col.center = Vector3.zero;
 
             go.AddComponent<EnemyController>();
+            go.GetComponent<EnemyController>().SetDropPrefab(dropPrefab);
             go.SetActive(false);
             return go;
         }
