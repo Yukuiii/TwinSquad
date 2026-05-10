@@ -171,11 +171,12 @@ namespace TwinSquad.Gameplay.Battle
             sr.sprite = _playerSprite;
             sr.sortingOrder = 10;
 
-            // 动画：有真图帧时挂播放器
+            // 动画：有真图帧时挂播放器，初始暂停（等待玩家移动时再播放）
             if (_playerIdleFrames != null && _playerIdleFrames.Length > 1)
             {
                 var anim = go.AddComponent<SimpleSpriteAnimator>();
                 anim.Play(_playerIdleFrames, newFps: 8f, newLoop: true);
+                anim.Pause();
             }
 
             // 物理：圆形碰撞框（顶视游戏标配），中心在 transform.position（脚底）

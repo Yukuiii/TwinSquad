@@ -23,6 +23,8 @@ namespace TwinSquad.Gameplay.Battle
         [SerializeField] private Transform muzzle;
 
         private float _attackTimer;
+        private SimpleSpriteAnimator _animator;
+        private bool _wasMoving;
 
         public void Configure(GameObject bullet, Transform muzzlePoint = null)
         {
@@ -35,6 +37,7 @@ namespace TwinSquad.Gameplay.Battle
             maxHP = Mathf.Max(maxHP, 200);
             base.Awake();
             camp = EntityCamp.Player;
+            _animator = GetComponent<SimpleSpriteAnimator>();
         }
 
         private void Start()
@@ -67,7 +70,17 @@ namespace TwinSquad.Gameplay.Battle
             {
                 dir.Normalize();
                 transform.position += dir * moveSpeed * Time.deltaTime;
-                // 2D 顶视：sprite 不旋转，永远直立朝屏幕
+
+                if (!_wasMoving)
+                {
+                    _wasMoving = true;
+                    if (_animator != null) _animator.Resume();
+                }
+            }
+            else if (_wasMoving)
+            {
+                _wasMoving = false;
+                if (_animator != null) _animator.Pause();
             }
         }
 

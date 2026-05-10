@@ -30,6 +30,7 @@ namespace TwinSquad.Gameplay.Battle
         private float _timer;
         private int _index;
         private bool _finished;
+        private bool _paused;
 
         private void Awake()
         {
@@ -56,16 +57,27 @@ namespace TwinSquad.Gameplay.Battle
             if (_sr != null) _sr.flipX = flip;
         }
 
+        public void Pause()
+        {
+            _paused = true;
+        }
+
+        public void Resume()
+        {
+            _paused = false;
+        }
+
         private void Reset()
         {
             _timer = 0f;
             _index = 0;
             _finished = false;
+            _paused = false;
         }
 
         private void Update()
         {
-            if (_finished || frames == null || frames.Length <= 1) return;
+            if (_paused || _finished || frames == null || frames.Length <= 1) return;
 
             _timer += Time.deltaTime;
             var step = 1f / fps;
