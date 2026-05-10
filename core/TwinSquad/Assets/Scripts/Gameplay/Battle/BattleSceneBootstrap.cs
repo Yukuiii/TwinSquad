@@ -51,12 +51,14 @@ namespace TwinSquad.Gameplay.Battle
         {
             BuildPlaceholderSprites();
 
-            CreateGround();
+            var ground = CreateGround();
 
             var battleMgrGo = CreateBattleManager();
             var bulletPrefab = CreateBulletTemplate();
             var enemyPrefab = CreateEnemyTemplate();
             var player = CreatePlayer(bulletPrefab);
+
+            ground.Bind(player.transform);   // 玩家创建后才能绑定跟随
 
             CreateCamera(player.transform);
             CreateSpawner(battleMgrGo, enemyPrefab);
@@ -94,10 +96,10 @@ namespace TwinSquad.Gameplay.Battle
         // ===== 场景元素 =====
 
         /// <summary>
-        /// 地面：用 SpriteRenderer + Tiled 平铺一张地砖图。
+        /// 地面：用 SpriteRenderer + Tiled 平铺一张地砖图，挂 InfiniteGround 实现无限滚动。
         /// 优先加载 Resources/Sprites/Environments/Tiles/grass_01；缺失则用纯色平铺。
         /// </summary>
-        private void CreateGround()
+        private InfiniteGround CreateGround()
         {
             var go = new GameObject("Ground");
             go.transform.position = Vector3.zero;
@@ -106,11 +108,13 @@ namespace TwinSquad.Gameplay.Battle
             var realTile = Resources.Load<Sprite>("Sprites/Environments/Tiles/grass_01");
             sr.sprite = realTile != null
                 ? realTile
-                : CreateRectSprite(groundColor, 256, 256, ppu: 32f);
+                : CreateRectSprite(groundColor, 256, 256, ppu: 64f);
 
             sr.drawMode = SpriteDrawMode.Tiled;
             sr.size = new Vector2(groundSize, groundSize);
             sr.sortingOrder = -100;  // 永远最底层
+
+            return go.AddComponent<InfiniteGround>();
         }
 
         /// <summary>
