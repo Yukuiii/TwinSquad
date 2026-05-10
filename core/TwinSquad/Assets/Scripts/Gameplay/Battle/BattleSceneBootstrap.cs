@@ -62,8 +62,8 @@ namespace TwinSquad.Gameplay.Battle
 
             ground.Bind(player.transform);   // 玩家创建后才能绑定跟随
 
-            CreateCamera(player.transform);
-            CreateSpawner(battleMgrGo, enemyPrefab);
+            var battleCamera = CreateCamera(player.transform);
+            CreateSpawner(battleMgrGo, enemyPrefab, battleCamera);
         }
 
         // ===== 占位 sprite =====
@@ -122,11 +122,13 @@ namespace TwinSquad.Gameplay.Battle
         /// <summary>
         /// 正交相机：纯顶视，仅 XY 平移跟随玩家，不旋转。
         /// </summary>
-        private void CreateCamera(Transform follow)
+        private Camera CreateCamera(Transform follow)
         {
-            var go = new GameObject("MainCamera");
+            var existingCamera = Camera.main;
+            var go = existingCamera != null ? existingCamera.gameObject : new GameObject("MainCamera");
+            go.name = "MainCamera";
             go.tag = "MainCamera";
-            var cam = go.AddComponent<Camera>();
+            var cam = existingCamera != null ? existingCamera : go.AddComponent<Camera>();
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = new Color(0.06f, 0.07f, 0.09f);
             cam.orthographic = true;
@@ -138,9 +140,11 @@ namespace TwinSquad.Gameplay.Battle
             cam.transform.position = follow.position + offset;
             // 不再 LookAt：相机始终朝 +Z，2D 顶视
 
-            var followCam = go.AddComponent<SimpleFollowCamera>();
+            var followCam = go.GetComponent<SimpleFollowCamera>();
+            if (followCam == null) followCam = go.AddComponent<SimpleFollowCamera>();
             followCam.Target = follow;
             followCam.Offset = offset;
+            return cam;
         }
 
         // ===== Battle 系统 =====
@@ -152,12 +156,16 @@ namespace TwinSquad.Gameplay.Battle
             return go;
         }
 
-        private void CreateSpawner(GameObject parent, GameObject enemyPrefab)
+        /// <summary>
+        /// 创建敌人生成器并绑定敌人模板与刷怪相机。
+        /// </summary>
+        private void CreateSpawner(GameObject parent, GameObject enemyPrefab, Camera spawnCamera)
         {
             var go = new GameObject("EnemySpawner");
             go.transform.SetParent(parent.transform, false);
             var spawner = go.AddComponent<EnemySpawner>();
             spawner.EnemyPrefab = enemyPrefab;
+            spawner.SpawnCamera = spawnCamera;
             spawner.BattleDuration = battleDuration;
         }
 

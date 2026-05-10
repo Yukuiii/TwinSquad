@@ -120,19 +120,19 @@ public abstract class BattleEntity : MonoBehaviour {
 
 ### 3.3 EnemySpawner（刷怪系统）✅ 基础版已实现
 
-按**固定数量**在玩家周围圆形位置随机生成敌人。
+按**固定间隔**在当前正交相机视口外随机生成敌人。
 
 ```csharp
 // 当前实际实现
 public class EnemySpawner : MonoBehaviour {
-    public IEnumerator RunBattle();                // 协程间隔生成
-    private Vector3 GetRandomPositionAroundPlayer(); // 圆周随机位置（XY 平面）
+    public IEnumerator RunBattle();                         // 协程间隔生成
+    private Vector3 GetRandomPositionOutsideScreen(Camera); // 屏幕外随机位置（XY 平面）
 }
-// 配置：totalCount / spawnRadius / spawnInterval / autoStart
+// 配置：spawnCamera / spawnScreenPadding / spawnInterval / autoStart
 // 自动预热对象池：PoolManager.Prewarm(enemyPrefab, count)
 ```
 
-**当前限制**：仅支持固定总数 + 随机圆形生成。多波次、曲线模式、触发模式待实现。
+**当前限制**：仅支持固定间隔 + 屏幕边缘随机生成。多波次、曲线模式、触发模式待实现。
 
 ```csharp
 // 规划中的完整配置（待实现）
