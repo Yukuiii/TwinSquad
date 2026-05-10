@@ -24,7 +24,7 @@ namespace TwinSquad.Gameplay.Battle
     // ===== 战斗级事件 =====
     public struct BattleStartedEvent
     {
-        public int EnemyTotal;
+        public float Duration;
     }
 
     public struct BattleEndedEvent

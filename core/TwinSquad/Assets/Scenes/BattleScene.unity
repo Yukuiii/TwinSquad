@@ -383,12 +383,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TwinSquad.Gameplay.Battle.BattleSceneBootstrap
   groundSize: 40
-  enemyCount: 10
+  battleDuration: 60
   cameraSize: 8
   cameraDepth: -10
   playerColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   enemyColor: {r: 1, g: 0.3, b: 0.3, a: 1}
   bulletColor: {r: 1, g: 0.95, b: 0.25, a: 1}
+  dropColor: {r: 0.3, g: 0.6, b: 1, a: 1}
   groundColor: {r: 0.22, g: 0.24, b: 0.28, a: 1}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

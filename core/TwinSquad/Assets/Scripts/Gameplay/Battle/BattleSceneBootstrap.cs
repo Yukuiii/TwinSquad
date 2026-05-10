@@ -22,8 +22,8 @@ namespace TwinSquad.Gameplay.Battle
         [Header("地图")]
         [SerializeField] private float groundSize = 40f;
 
-        [Header("敌人")]
-        [SerializeField] private int enemyCount = 10;
+        [Header("战斗")]
+        [SerializeField] private float battleDuration = 60f;
 
         [Header("相机")]
         [SerializeField] private float cameraSize = 8f;     // 正交视野半高（半视野单位数）
@@ -158,7 +158,7 @@ namespace TwinSquad.Gameplay.Battle
             go.transform.SetParent(parent.transform, false);
             var spawner = go.AddComponent<EnemySpawner>();
             spawner.EnemyPrefab = enemyPrefab;
-            spawner.TotalCount = enemyCount;
+            spawner.BattleDuration = battleDuration;
         }
 
         // ===== 玩家 =====
